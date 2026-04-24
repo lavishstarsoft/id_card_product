@@ -20,7 +20,7 @@ export async function PATCH(request, { params }) {
         ...(typeof body.adminRemarks === 'string' ? { adminRemarks: body.adminRemarks } : {}),
         ...(typeof body.approvedJournalistId === 'string' ? { approvedJournalistId: body.approvedJournalistId } : {})
       },
-      { new: true }
+      { returnDocument: 'after' }
     );
 
     if (!updated) {
@@ -30,5 +30,21 @@ export async function PATCH(request, { params }) {
     return NextResponse.json({ message: 'Request updated', data: updated });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to update request', details: error.message }, { status: 500 });
+  }
+}
+
+export async function DELETE(request, { params }) {
+  try {
+    await dbConnect();
+    const { id } = await params;
+    const deleted = await IdCardRequest.findByIdAndDelete(id);
+
+    if (!deleted) {
+      return NextResponse.json({ error: 'Request not found' }, { status: 404 });
+    }
+
+    return NextResponse.json({ message: 'Request deleted successfully' });
+  } catch (error) {
+    return NextResponse.json({ error: 'Failed to delete request', details: error.message }, { status: 500 });
   }
 }

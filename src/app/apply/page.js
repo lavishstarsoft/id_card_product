@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 
 const initialForm = {
   fullName: '',
@@ -21,12 +20,14 @@ const initialForm = {
 };
 
 export default function EmployeeApplyPage() {
-  const router = useRouter();
   const [formData, setFormData] = useState(initialForm);
   const [images, setImages] = useState({ profileImage: '', signatureImage: '' });
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+  const [highlightedField, setHighlightedField] = useState('');
   const [branding, setBranding] = useState({
-    logoUrl: '/logo.jpg',
+    logoUrl: '',
     applyTitle: 'Employee ID Card Application'
   });
 
@@ -37,7 +38,7 @@ export default function EmployeeApplyPage() {
         if (!res.ok) return;
         const data = await res.json();
         setBranding({
-          logoUrl: data?.logoUrl || '/logo.jpg',
+          logoUrl: data?.logoUrl || '',
           applyTitle: data?.applyTitle || 'Employee ID Card Application'
         });
       } catch {
@@ -50,6 +51,55 @@ export default function EmployeeApplyPage() {
   const onInput = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    if (highlightedField === name) {
+      setHighlightedField('');
+    }
+  };
+
+  const focusAndHighlightField = (fieldName) => {
+    if (!fieldName) return;
+    setHighlightedField(fieldName);
+    const field = document.querySelector(`[name="${fieldName}"]`);
+    if (field) {
+      field.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      field.focus();
+    }
+    setTimeout(() => setHighlightedField((prev) => (prev === fieldName ? '' : prev)), 2200);
+  };
+
+  const inferFieldFromError = (message) => {
+    const text = String(message || '').toLowerCase();
+    if (text.includes('full name')) return 'fullName';
+    if (text.includes('father name')) return 'fatherName';
+    if (text.includes('date of birth')) return 'dateOfBirth';
+    if (text.includes('gender')) return 'gender';
+    if (text.includes('email')) return 'email';
+    if (text.includes('mobile')) return 'mobile';
+    if (text.includes('emergency')) return 'emergencyContact';
+    if (text.includes('work location')) return 'workLocation';
+    if (text.includes('area')) return 'area';
+    if (text.includes('blood')) return 'bloodGroup';
+    if (text.includes('experience')) return 'experienceYears';
+    if (text.includes('aadhaar')) return 'aadhaarNumber';
+    if (text.includes('address')) return 'address';
+    if (text.includes('purpose')) return 'purpose';
+    return '';
+  };
+
+  const validateFormBeforeSubmit = () => {
+    const requiredChecks = [
+      { key: 'fullName', label: 'Full Name' },
+      { key: 'mobile', label: 'Mobile Number' }
+    ];
+    for (const item of requiredChecks) {
+      if (!String(formData[item.key] || '').trim()) {
+        const message = `${item.label} is required`;
+        setSubmitError(message);
+        focusAndHighlightField(item.key);
+        return false;
+      }
+    }
+    return true;
   };
 
   const onImageUpload = (e, key) => {
@@ -64,6 +114,8 @@ export default function EmployeeApplyPage() {
 
   const onSubmit = async (e) => {
     e.preventDefault();
+    setSubmitError('');
+    if (!validateFormBeforeSubmit()) return;
     setSubmitting(true);
 
     try {
@@ -79,16 +131,17 @@ export default function EmployeeApplyPage() {
 
       const data = await res.json();
       if (!res.ok) {
-        alert(data.error || 'Application submit failed');
+        const errorMessage = data.error || 'Application submit failed';
+        setSubmitError(errorMessage);
+        focusAndHighlightField(inferFieldFromError(errorMessage));
         return;
       }
 
-      alert('Application submitted successfully. Admin will review and generate your ID card.');
       setFormData(initialForm);
       setImages({ profileImage: '', signatureImage: '' });
-      router.push('/login');
+      setShowSuccessPopup(true);
     } catch {
-      alert('Failed to submit form. Please try again.');
+      setSubmitError('Failed to submit form. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -98,22 +151,23 @@ export default function EmployeeApplyPage() {
     <main className="employee-apply-page">
       <div className="employee-apply-card">
         <div className="employee-apply-logo-wrap">
-          <img src={branding.logoUrl || '/logo.jpg'} alt="Brand Logo" className="employee-apply-logo" />
+          {branding.logoUrl ? <img src={branding.logoUrl} alt="Brand Logo" className="employee-apply-logo" /> : null}
         </div>
         <h1>{branding.applyTitle || 'Employee ID Card Application'}</h1>
 
         <form onSubmit={onSubmit} className="employee-apply-form">
+          {submitError ? <div className="apply-error-banner">{submitError}</div> : null}
           <div className="grid-2">
-            <label>Full Name*
+            <label className={highlightedField === 'fullName' ? 'field-highlight' : ''}>Full Name*
               <input name="fullName" value={formData.fullName} onChange={onInput} required />
             </label>
-            <label>Father Name
+            <label className={highlightedField === 'fatherName' ? 'field-highlight' : ''}>Father Name
               <input name="fatherName" value={formData.fatherName} onChange={onInput} />
             </label>
-            <label>Date of Birth
+            <label className={highlightedField === 'dateOfBirth' ? 'field-highlight' : ''}>Date of Birth
               <input type="date" name="dateOfBirth" value={formData.dateOfBirth} onChange={onInput} />
             </label>
-            <label>Gender
+            <label className={highlightedField === 'gender' ? 'field-highlight' : ''}>Gender
               <select name="gender" value={formData.gender} onChange={onInput}>
                 <option value="">Select</option>
                 <option value="male">Male</option>
@@ -121,22 +175,22 @@ export default function EmployeeApplyPage() {
                 <option value="other">Other</option>
               </select>
             </label>
-            <label>Email
+            <label className={highlightedField === 'email' ? 'field-highlight' : ''}>Email
               <input type="email" name="email" value={formData.email} onChange={onInput} />
             </label>
-            <label>Mobile Number*
+            <label className={highlightedField === 'mobile' ? 'field-highlight' : ''}>Mobile Number*
               <input name="mobile" value={formData.mobile} onChange={onInput} required />
             </label>
-            <label>Emergency Contact
+            <label className={highlightedField === 'emergencyContact' ? 'field-highlight' : ''}>Emergency Contact
               <input name="emergencyContact" value={formData.emergencyContact} onChange={onInput} />
             </label>
-            <label>Work Location
+            <label className={highlightedField === 'workLocation' ? 'field-highlight' : ''}>Work Location
               <input name="workLocation" value={formData.workLocation} onChange={onInput} />
             </label>
-            <label>Reporting Area
+            <label className={highlightedField === 'area' ? 'field-highlight' : ''}>Reporting Area
               <input name="area" value={formData.area} onChange={onInput} />
             </label>
-            <label>Blood Group
+            <label className={highlightedField === 'bloodGroup' ? 'field-highlight' : ''}>Blood Group
               <select name="bloodGroup" value={formData.bloodGroup} onChange={onInput}>
                 <option value="">Select</option>
                 <option value="A+">A+</option>
@@ -149,19 +203,19 @@ export default function EmployeeApplyPage() {
                 <option value="O-">O-</option>
               </select>
             </label>
-            <label>Experience (Years)
+            <label className={highlightedField === 'experienceYears' ? 'field-highlight' : ''}>Experience (Years)
               <input name="experienceYears" value={formData.experienceYears} onChange={onInput} />
             </label>
-            <label>Aadhaar Number
+            <label className={highlightedField === 'aadhaarNumber' ? 'field-highlight' : ''}>Aadhaar Number
               <input name="aadhaarNumber" value={formData.aadhaarNumber} onChange={onInput} />
             </label>
           </div>
 
-          <label>Current Address
+          <label className={highlightedField === 'address' ? 'field-highlight' : ''}>Current Address
             <textarea name="address" value={formData.address} onChange={onInput} rows={3} />
           </label>
 
-          <label>Purpose / Notes
+          <label className={highlightedField === 'purpose' ? 'field-highlight' : ''}>Purpose / Notes
             <textarea name="purpose" value={formData.purpose} onChange={onInput} rows={3} />
           </label>
 
@@ -179,6 +233,17 @@ export default function EmployeeApplyPage() {
           </button>
         </form>
       </div>
+
+      {showSuccessPopup && (
+        <div className="apply-success-overlay" onClick={() => setShowSuccessPopup(false)}>
+          <div className="apply-success-popup" onClick={(e) => e.stopPropagation()}>
+            <div className="apply-success-icon">✓</div>
+            <h3>Application Submitted</h3>
+            <p>Your request is sent to admin successfully.</p>
+            <button type="button" onClick={() => setShowSuccessPopup(false)}>OK</button>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

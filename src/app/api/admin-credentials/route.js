@@ -59,7 +59,7 @@ export async function PUT(request) {
         await Admin.findOneAndUpdate(
           { username: newUsername },
           { username: newUsername, password: await bcrypt.hash(currentPassword, 10) },
-          { upsert: true, new: true, setDefaultsOnInsert: true }
+          { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
         );
       }
 
@@ -82,7 +82,7 @@ export async function PUT(request) {
         await Admin.findOneAndUpdate(
           { username: currentUsername },
           { username: currentUsername, password: hashed },
-          { upsert: true, new: true, setDefaultsOnInsert: true }
+          { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
         );
       }
 

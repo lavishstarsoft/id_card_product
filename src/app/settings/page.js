@@ -5,11 +5,11 @@ import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, Home, LogOut } from 'lucide-react';
 
 const defaults = {
-  brandName: 'RK Vision News TV',
+  brandName: 'LavishstarTechnologies',
   dashboardTitle: 'Management Dashboard',
   applyTitle: 'Employee ID Card Application',
   adminLoginLabel: 'ADMIN LOGIN',
-  logoUrl: '/logo.jpg'
+  logoUrl: ''
 };
 
 export default function SettingsPage() {
@@ -209,11 +209,11 @@ export default function SettingsPage() {
       <div className="dashboard-header">
         <div className="header-left">
           <div className="logo-box">
-            <img src={form.logoUrl || '/logo.jpg'} alt="Brand Logo" className="dashboard-logo" />
+            {form.logoUrl ? <img src={form.logoUrl} alt="Brand Logo" className="dashboard-logo" /> : null}
           </div>
           <div>
             <h1>{form.dashboardTitle || 'Management Dashboard'}</h1>
-            <p className="header-brand-name">{form.brandName || 'RK Vision News TV'}</p>
+            <p className="header-brand-name">{form.brandName || 'LavishstarTechnologies'}</p>
           </div>
         </div>
 
@@ -260,7 +260,7 @@ export default function SettingsPage() {
             </label>
             <div className="branding-logo-preview">
               <span>Logo Preview</span>
-              <img src={form.logoUrl || '/logo.jpg'} alt="Brand logo preview" />
+              {form.logoUrl ? <img src={form.logoUrl} alt="Brand logo preview" /> : <span>No logo selected</span>}
             </div>
           </div>
           <div className="branding-settings-actions">

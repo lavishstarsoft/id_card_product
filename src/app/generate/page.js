@@ -75,15 +75,16 @@ export default function GeneratePage() {
 
   // Handle Edit from Dashboard
   useEffect(() => {
-    const fetchNextPressId = async () => {
+    const fetchNextPressMeta = async () => {
       try {
         const res = await fetch('/api/journalists?nextPressId=true');
         if (!res.ok) return;
         const data = await res.json();
-        if (data?.pressId) {
+        if (data?.pressId && !initialDraft?._id) {
           setFormData(prev => ({ ...prev, pressId: data.pressId }));
         }
-        if (data?.lastSavedLayout && Object.keys(data.lastSavedLayout).length > 0) {
+        const hasDraftLayout = Boolean(initialDraft?.layout && Object.keys(initialDraft.layout).length > 0);
+        if (!hasDraftLayout && data?.lastSavedLayout && Object.keys(data.lastSavedLayout).length > 0) {
           setLayout(data.lastSavedLayout);
         }
       } catch (error) {
@@ -91,10 +92,15 @@ export default function GeneratePage() {
       }
     };
 
+    const isRequestToNewCardFlow = Boolean(initialDraft?._requestId && !initialDraft?._id);
+
     if (initialDraft) {
       sessionStorage.removeItem('editJournalist');
+      if (isRequestToNewCardFlow) {
+        fetchNextPressMeta();
+      }
     } else {
-      fetchNextPressId();
+      fetchNextPressMeta();
     }
   }, [initialDraft]);
 
@@ -266,7 +272,7 @@ export default function GeneratePage() {
   return (
     <div className="app-container">
       <div className="header">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', maxWidth: '1200px', margin: '0 auto' }}>
+        <div className="generator-topbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', maxWidth: '1200px', margin: '0 auto' }}>
           <div>
             <h1>RK Vision ID Generator</h1>
             <p>Fill the details to dynamically generate your press ID card</p>

@@ -34,12 +34,37 @@ export async function POST(request) {
   try {
     await dbConnect();
     const body = await request.json();
+    const normalizedMobile = String(body.mobile || '').trim();
+    const normalizedEmail = String(body.email || '').trim().toLowerCase();
+
+    if (!normalizedMobile) {
+      return NextResponse.json({ error: 'Mobile number is required' }, { status: 400 });
+    }
+
+    const duplicateQuery = {
+      $or: [
+        { mobile: normalizedMobile },
+        ...(normalizedEmail ? [{ email: normalizedEmail }] : [])
+      ]
+    };
+
+    const existing = await IdCardRequest.findOne(duplicateQuery).select('mobile email').lean();
+    if (existing) {
+      if (existing.mobile === normalizedMobile) {
+        return NextResponse.json({ error: 'This mobile number is already submitted' }, { status: 409 });
+      }
+      if (normalizedEmail && existing.email === normalizedEmail) {
+        return NextResponse.json({ error: 'This email is already submitted' }, { status: 409 });
+      }
+    }
 
     const profileImage = await uploadImageIfBase64(body.profileImage, 'applications/profile');
     const signatureImage = await uploadImageIfBase64(body.signatureImage, 'applications/signature');
 
     const created = await IdCardRequest.create({
       ...body,
+      mobile: normalizedMobile,
+      email: normalizedEmail,
       profileImage,
       signatureImage
     });

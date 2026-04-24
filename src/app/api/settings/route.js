@@ -7,11 +7,11 @@ const BRANDING_KEY = 'branding';
 
 function defaults() {
   return {
-    brandName: 'RK Vision News TV',
+    brandName: 'LavishstarTechnologies',
     dashboardTitle: 'Management Dashboard',
     applyTitle: 'Employee ID Card Application',
     adminLoginLabel: 'ADMIN LOGIN',
-    logoUrl: '/logo.jpg'
+    logoUrl: ''
   };
 }
 
@@ -20,7 +20,7 @@ async function withDisplayLogo(doc) {
   if (!base) return defaults();
   return {
     ...base,
-    logoUrl: await getDisplayImageUrl(base.logoUrl || '/logo.jpg')
+    logoUrl: await getDisplayImageUrl(base.logoUrl || '')
   };
 }
 
@@ -54,17 +54,24 @@ export async function PUT(request) {
       ...(logoUrl ? { logoUrl } : {})
     };
 
-    const settings = await AppSettings.findOneAndUpdate(
-      { key: BRANDING_KEY },
-      { $set: update, $setOnInsert: { ...defaults(), key: BRANDING_KEY } },
-      { new: true, upsert: true }
-    );
+    let settings = await AppSettings.findOne({ key: BRANDING_KEY });
+    if (!settings) {
+      settings = await AppSettings.create({
+        key: BRANDING_KEY,
+        ...defaults(),
+        ...update
+      });
+    } else {
+      Object.assign(settings, update);
+      await settings.save();
+    }
 
     return NextResponse.json({
       message: 'Brand settings updated',
       data: await withDisplayLogo(settings)
     });
   } catch (error) {
+    console.error('Settings update error:', error);
     return NextResponse.json({ error: 'Failed to update settings', details: error.message }, { status: 500 });
   }
 }

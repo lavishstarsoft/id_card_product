@@ -12,7 +12,7 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [branding, setBranding] = useState({
-    logoUrl: '/logo.jpg',
+    logoUrl: '',
     adminLoginLabel: 'ADMIN LOGIN'
   });
 
@@ -23,7 +23,7 @@ export default function LoginPage() {
         if (!res.ok) return;
         const data = await res.json();
         setBranding({
-          logoUrl: data?.logoUrl || '/logo.jpg',
+          logoUrl: data?.logoUrl || '',
           adminLoginLabel: data?.adminLoginLabel || 'ADMIN LOGIN'
         });
       } catch {
@@ -63,7 +63,7 @@ export default function LoginPage() {
     <div className="login-page">
       <div className="login-card">
         <div className="login-header">
-          <img src={branding.logoUrl || '/logo.jpg'} alt="Brand Logo" className="login-logo" />
+          {branding.logoUrl ? <img src={branding.logoUrl} alt="Brand Logo" className="login-logo" /> : null}
           <span className="login-badge">{branding.adminLoginLabel || 'ADMIN LOGIN'}</span>
         </div>
 

@@ -51,6 +51,25 @@ export default function DraggableElement({
     });
   }, [position.x, position.y, size.width, size.height]);
 
+  // Sync from parent when external layout is loaded (e.g., from saved template/request flow).
+  useEffect(() => {
+    if (isDragging || isResizing) return;
+    const nextX = initialPosition?.x ?? 0;
+    const nextY = initialPosition?.y ?? 0;
+    if (position.x !== nextX || position.y !== nextY) {
+      setPosition({ x: nextX, y: nextY });
+    }
+  }, [initialPosition?.x, initialPosition?.y, isDragging, isResizing, position.x, position.y]);
+
+  useEffect(() => {
+    if (isResizing) return;
+    const nextWidth = initialWidth ?? null;
+    const nextHeight = initialHeight ?? null;
+    if (size.width !== nextWidth || size.height !== nextHeight) {
+      setSize({ width: nextWidth, height: nextHeight });
+    }
+  }, [initialWidth, initialHeight, isResizing, size.width, size.height]);
+
   // --- DRAG (move) ---
   const handleMouseDown = useCallback((e) => {
     if (isResizing) return;

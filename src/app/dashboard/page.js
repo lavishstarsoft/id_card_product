@@ -13,7 +13,8 @@ import {
   ShieldCheck,
   ShieldX,
   ExternalLink,
-  Settings
+  Settings,
+  Eye
 } from 'lucide-react';
 
 export default function Dashboard() {
@@ -35,9 +36,10 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState('requests');
   const [requestSearch, setRequestSearch] = useState('');
   const [requestStatusFilter, setRequestStatusFilter] = useState('all');
+  const [previewRequest, setPreviewRequest] = useState(null);
   const [branding, setBranding] = useState({
-    logoUrl: '/logo.jpg',
-    brandName: 'RK Vision News TV',
+    logoUrl: '',
+    brandName: 'LavishstarTechnologies',
     dashboardTitle: 'Management Dashboard'
   });
 
@@ -74,8 +76,8 @@ export default function Dashboard() {
       if (!res.ok) return;
       const data = await res.json();
       const next = {
-        logoUrl: data?.logoUrl || '/logo.jpg',
-        brandName: data?.brandName || 'RK Vision News TV',
+        logoUrl: data?.logoUrl || '',
+        brandName: data?.brandName || 'LavishstarTechnologies',
         dashboardTitle: data?.dashboardTitle || 'Management Dashboard'
       };
       setBranding(next);
@@ -233,6 +235,14 @@ export default function Dashboard() {
     router.push('/generate');
   };
 
+  const openRequestPreview = (requestItem) => {
+    setPreviewRequest(requestItem);
+  };
+
+  const closeRequestPreview = () => {
+    setPreviewRequest(null);
+  };
+
   const updateRequestStatus = async (id, status) => {
     try {
       const res = await fetch(`/api/id-card-requests/${id}`, {
@@ -248,6 +258,24 @@ export default function Dashboard() {
       fetchIdRequests();
     } catch {
       alert('Failed to update request');
+    }
+  };
+
+  const deleteRequest = async (id) => {
+    if (!confirm('Are you sure you want to delete this request?')) return;
+    try {
+      const res = await fetch(`/api/id-card-requests/${id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const error = await res.json();
+        alert(error.error || 'Failed to delete request');
+        return;
+      }
+      setIdRequests((prev) => prev.filter((item) => item._id !== id));
+      if (previewRequest?._id === id) {
+        setPreviewRequest(null);
+      }
+    } catch {
+      alert('Failed to delete request');
     }
   };
 
@@ -275,11 +303,11 @@ export default function Dashboard() {
       <div className="dashboard-header">
         <div className="header-left">
           <div className="logo-box">
-            <img src={branding.logoUrl || '/logo.jpg'} alt="Brand Logo" className="dashboard-logo" />
+            {branding.logoUrl ? <img src={branding.logoUrl} alt="Brand Logo" className="dashboard-logo" /> : null}
           </div>
           <div>
             <h1>{branding.dashboardTitle || 'Management Dashboard'}</h1>
-            <p className="header-brand-name">{branding.brandName || 'RK Vision News TV'}</p>
+            <p className="header-brand-name">{branding.brandName || 'LavishstarTechnologies'}</p>
           </div>
         </div>
         
@@ -425,6 +453,13 @@ export default function Dashboard() {
                       <td>
                         <div className="row-actions">
                           <button
+                            onClick={() => openRequestPreview(req)}
+                            className="action-icon verify"
+                            title="Preview Details"
+                          >
+                            <Eye size={16} />
+                          </button>
+                          <button
                             onClick={() => handleCreateFromRequest(req)}
                             className="action-icon edit"
                             title="Create ID Card"
@@ -444,6 +479,13 @@ export default function Dashboard() {
                             title="Mark Rejected"
                           >
                             <ShieldX size={16} />
+                          </button>
+                          <button
+                            onClick={() => deleteRequest(req._id)}
+                            className="action-icon delete"
+                            title="Delete Request"
+                          >
+                            <Trash2 size={16} />
                           </button>
                         </div>
                       </td>
@@ -585,6 +627,69 @@ export default function Dashboard() {
             <div className="secret-modal-actions">
               <button type="button" className="secret-cancel" onClick={closeAuthModal}>Cancel</button>
               <button type="button" className="secret-confirm" onClick={submitProtectedAction}>Confirm</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {previewRequest && (
+        <div className="secret-modal-overlay" onClick={closeRequestPreview}>
+          <div className="request-preview-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="request-preview-header">
+              <h3>Employee Request Preview</h3>
+              <button type="button" onClick={closeRequestPreview}>×</button>
+            </div>
+
+            <div className="request-preview-images">
+              <div>
+                <span>Profile Photo</span>
+                {previewRequest.profileImage ? (
+                  <img src={previewRequest.profileImage} alt={previewRequest.fullName} />
+                ) : (
+                  <div className="request-preview-empty">No Photo</div>
+                )}
+              </div>
+              <div>
+                <span>Signature</span>
+                {previewRequest.signatureImage ? (
+                  <img src={previewRequest.signatureImage} alt="Signature" />
+                ) : (
+                  <div className="request-preview-empty">No Signature</div>
+                )}
+              </div>
+            </div>
+
+            <div className="request-preview-grid">
+              <div><span>Full Name</span><strong>{previewRequest.fullName || '-'}</strong></div>
+              <div><span>Father Name</span><strong>{previewRequest.fatherName || '-'}</strong></div>
+              <div><span>Date of Birth</span><strong>{previewRequest.dateOfBirth || '-'}</strong></div>
+              <div><span>Gender</span><strong>{previewRequest.gender || '-'}</strong></div>
+              <div><span>Email</span><strong>{previewRequest.email || '-'}</strong></div>
+              <div><span>Mobile</span><strong>{previewRequest.mobile || '-'}</strong></div>
+              <div><span>Emergency</span><strong>{previewRequest.emergencyContact || '-'}</strong></div>
+              <div><span>Work Location</span><strong>{previewRequest.workLocation || '-'}</strong></div>
+              <div><span>Area</span><strong>{previewRequest.area || '-'}</strong></div>
+              <div><span>Blood Group</span><strong>{previewRequest.bloodGroup || '-'}</strong></div>
+              <div><span>Experience</span><strong>{previewRequest.experienceYears || '-'}</strong></div>
+              <div><span>Aadhaar</span><strong>{previewRequest.aadhaarNumber || '-'}</strong></div>
+              <div><span>Status</span><strong>{previewRequest.status || '-'}</strong></div>
+              <div><span>Submitted</span><strong>{new Date(previewRequest.createdAt).toLocaleDateString('en-IN')}</strong></div>
+              <div><span>Address</span><strong>{previewRequest.address || '-'}</strong></div>
+              <div><span>Purpose</span><strong>{previewRequest.purpose || '-'}</strong></div>
+            </div>
+
+            <div className="request-preview-actions">
+              <button type="button" className="secret-cancel" onClick={closeRequestPreview}>Close</button>
+              <button
+                type="button"
+                className="secret-confirm"
+                onClick={() => {
+                  closeRequestPreview();
+                  handleCreateFromRequest(previewRequest);
+                }}
+              >
+                Create ID Card
+              </button>
             </div>
           </div>
         </div>
