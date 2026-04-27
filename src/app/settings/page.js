@@ -18,9 +18,11 @@ export default function SettingsPage() {
   const [logoUpload, setLogoUpload] = useState('');
   const [saving, setSaving] = useState(false);
   const [credentialsForm, setCredentialsForm] = useState({
-    currentUsername: '',
-    currentPassword: '',
+    usernameGroupCurrentUsername: '',
+    usernameGroupCurrentPassword: '',
     newUsername: '',
+    passwordGroupCurrentUsername: '',
+    passwordGroupCurrentPassword: '',
     newPassword: '',
     confirmNewPassword: ''
   });
@@ -29,7 +31,8 @@ export default function SettingsPage() {
     password: false
   });
   const [showPasswords, setShowPasswords] = useState({
-    currentPassword: false,
+    usernameGroupCurrentPassword: false,
+    passwordGroupCurrentPassword: false,
     newPassword: false,
     confirmNewPassword: false
   });
@@ -127,7 +130,7 @@ export default function SettingsPage() {
   };
 
   const saveUsername = async () => {
-    if (!credentialsForm.currentUsername || !credentialsForm.currentPassword || !credentialsForm.newUsername) {
+    if (!credentialsForm.usernameGroupCurrentUsername || !credentialsForm.usernameGroupCurrentPassword || !credentialsForm.newUsername) {
       alert('Please fill current username, current password and new username');
       return;
     }
@@ -139,9 +142,9 @@ export default function SettingsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'username',
-          currentUsername: credentialsForm.currentUsername,
-          currentPassword: credentialsForm.currentPassword,
-          newUsername: credentialsForm.newUsername
+          currentUsername: credentialsForm.usernameGroupCurrentUsername.trim(),
+          currentPassword: credentialsForm.usernameGroupCurrentPassword,
+          newUsername: credentialsForm.newUsername.trim()
         })
       });
       const data = await res.json();
@@ -152,7 +155,8 @@ export default function SettingsPage() {
       alert('Username updated successfully');
       setCredentialsForm((prev) => ({
         ...prev,
-        currentUsername: prev.newUsername,
+        usernameGroupCurrentUsername: prev.newUsername.trim(),
+        usernameGroupCurrentPassword: '',
         newUsername: ''
       }));
     } catch {
@@ -163,7 +167,7 @@ export default function SettingsPage() {
   };
 
   const savePassword = async () => {
-    if (!credentialsForm.currentUsername || !credentialsForm.currentPassword || !credentialsForm.newPassword) {
+    if (!credentialsForm.passwordGroupCurrentUsername || !credentialsForm.passwordGroupCurrentPassword || !credentialsForm.newPassword) {
       alert('Please fill current username, current password and new password');
       return;
     }
@@ -180,8 +184,8 @@ export default function SettingsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'password',
-          currentUsername: credentialsForm.currentUsername,
-          currentPassword: credentialsForm.currentPassword,
+          currentUsername: credentialsForm.passwordGroupCurrentUsername.trim(),
+          currentPassword: credentialsForm.passwordGroupCurrentPassword,
           newPassword: credentialsForm.newPassword
         })
       });
@@ -193,7 +197,7 @@ export default function SettingsPage() {
       alert('Password updated successfully');
       setCredentialsForm((prev) => ({
         ...prev,
-        currentPassword: '',
+        passwordGroupCurrentPassword: '',
         newPassword: '',
         confirmNewPassword: ''
       }));
@@ -285,10 +289,29 @@ export default function SettingsPage() {
                 <label>
                   Current Username
                   <input
-                    name="currentUsername"
-                    value={credentialsForm.currentUsername}
+                    name="usernameGroupCurrentUsername"
+                    value={credentialsForm.usernameGroupCurrentUsername}
                     onChange={onCredentialsChange}
                   />
+                </label>
+                <label>
+                  Current Password
+                  <div className="password-input-wrap">
+                    <input
+                      type={showPasswords.usernameGroupCurrentPassword ? 'text' : 'password'}
+                      name="usernameGroupCurrentPassword"
+                      value={credentialsForm.usernameGroupCurrentPassword}
+                      onChange={onCredentialsChange}
+                    />
+                    <button
+                      type="button"
+                      className="password-toggle-btn"
+                      onClick={() => togglePasswordVisibility('usernameGroupCurrentPassword')}
+                      title={showPasswords.usernameGroupCurrentPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showPasswords.usernameGroupCurrentPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
                 </label>
                 <label>
                   New Username
@@ -310,21 +333,29 @@ export default function SettingsPage() {
               <h3>Password Group</h3>
               <div className="branding-settings-grid">
                 <label>
+                  Current Username
+                  <input
+                    name="passwordGroupCurrentUsername"
+                    value={credentialsForm.passwordGroupCurrentUsername}
+                    onChange={onCredentialsChange}
+                  />
+                </label>
+                <label>
                   Current Password
                   <div className="password-input-wrap">
                     <input
-                      type={showPasswords.currentPassword ? 'text' : 'password'}
-                      name="currentPassword"
-                      value={credentialsForm.currentPassword}
+                      type={showPasswords.passwordGroupCurrentPassword ? 'text' : 'password'}
+                      name="passwordGroupCurrentPassword"
+                      value={credentialsForm.passwordGroupCurrentPassword}
                       onChange={onCredentialsChange}
                     />
                     <button
                       type="button"
                       className="password-toggle-btn"
-                      onClick={() => togglePasswordVisibility('currentPassword')}
-                      title={showPasswords.currentPassword ? 'Hide password' : 'Show password'}
+                      onClick={() => togglePasswordVisibility('passwordGroupCurrentPassword')}
+                      title={showPasswords.passwordGroupCurrentPassword ? 'Hide password' : 'Show password'}
                     >
-                      {showPasswords.currentPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      {showPasswords.passwordGroupCurrentPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
                   </div>
                 </label>

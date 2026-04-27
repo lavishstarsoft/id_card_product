@@ -7,14 +7,21 @@ import { SignJWT } from 'jose';
 export async function POST(request) {
   try {
     const { username, password } = await request.json();
+    const fallbackOk = username === 'admin' && (password === 'admin123' || password === 'admin@123');
 
     if (!username || !password) {
       return NextResponse.json({ error: 'Username and password are required' }, { status: 400 });
     }
 
+    let dbAvailable = false;
+    let hasAnyAdmin = false;
+
     // 1. Database Login Check
     try {
       await dbConnect();
+      dbAvailable = true;
+      hasAnyAdmin = Boolean(await Admin.exists({}));
+
       const admin = await Admin.findOne({ username });
       if (admin) {
         const isMatch = await bcrypt.compare(password, admin.password);
@@ -41,8 +48,8 @@ export async function POST(request) {
       // Database connection error - silently falling back
     }
 
-    // 2. Hardcoded fallback login (used when DB user is not configured)
-    if (username === 'admin' && (password === 'admin123' || password === 'admin@123')) {
+    // 2. Hardcoded fallback login (allowed only when DB is unavailable or no admin exists)
+    if (fallbackOk && (!dbAvailable || !hasAnyAdmin)) {
       const secret = new TextEncoder().encode(process.env.JWT_SECRET);
       const token = await new SignJWT({ username: 'admin', role: 'admin' })
         .setProtectedHeader({ alg: 'HS256' })

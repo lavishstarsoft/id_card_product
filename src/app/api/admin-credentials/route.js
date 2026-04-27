@@ -6,17 +6,44 @@ import Admin from '@/lib/Admin';
 const FALLBACK_ADMIN_USERNAME = 'admin';
 const FALLBACK_PASSWORDS = ['admin123', 'admin@123'];
 
+function isBcryptHash(value) {
+  return /^\$2[aby]\$\d{2}\$/.test(String(value || ''));
+}
+
 async function verifyCurrentCredentials(currentUsername, currentPassword) {
   await dbConnect();
   const admin = await Admin.findOne({ username: currentUsername });
-  if (admin) {
-    const ok = await bcrypt.compare(currentPassword, admin.password);
-    return { ok, admin };
-  }
+  const hasAnyAdmin = Boolean(await Admin.exists({}));
 
   const fallbackOk =
+    !hasAnyAdmin &&
     currentUsername === FALLBACK_ADMIN_USERNAME &&
     FALLBACK_PASSWORDS.includes(currentPassword);
+
+  if (admin) {
+    let ok = false;
+    const storedPassword = String(admin.password || '');
+
+    if (storedPassword) {
+      if (isBcryptHash(storedPassword)) {
+        ok = await bcrypt.compare(currentPassword, storedPassword);
+      } else {
+        ok = currentPassword === storedPassword;
+        // One-time migration for plaintext password records.
+        if (ok) {
+          admin.password = await bcrypt.hash(currentPassword, 10);
+          await admin.save();
+        }
+      }
+    }
+
+    // Match login behavior: fallback only when DB admin is not configured.
+    if (!ok && fallbackOk) {
+      return { ok: true, admin: null };
+    }
+
+    return { ok, admin };
+  }
 
   return { ok: fallbackOk, admin: null };
 }
@@ -57,7 +84,7 @@ export async function PUT(request) {
         await admin.save();
       } else {
         await Admin.findOneAndUpdate(
-          { username: newUsername },
+          { username: currentUsername },
           { username: newUsername, password: await bcrypt.hash(currentPassword, 10) },
           { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
         );
