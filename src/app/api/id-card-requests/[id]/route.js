@@ -13,13 +13,23 @@ export async function PATCH(request, { params }) {
       return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
     }
 
+    const updatableFields = [
+      'fullName', 'fatherName', 'dateOfBirth', 'gender', 'email', 'mobile',
+      'emergencyContact', 'workLocation', 'area', 'bloodGroup', 'experienceYears',
+      'aadhaarNumber', 'address', 'purpose', 'profileImage', 'signatureImage',
+      'status', 'adminRemarks', 'approvedJournalistId'
+    ];
+
+    const updateData = {};
+    for (const field of updatableFields) {
+      if (body[field] !== undefined) {
+        updateData[field] = body[field];
+      }
+    }
+
     const updated = await IdCardRequest.findByIdAndUpdate(
       id,
-      {
-        ...(body.status ? { status: body.status } : {}),
-        ...(typeof body.adminRemarks === 'string' ? { adminRemarks: body.adminRemarks } : {}),
-        ...(typeof body.approvedJournalistId === 'string' ? { approvedJournalistId: body.approvedJournalistId } : {})
-      },
+      updateData,
       { returnDocument: 'after' }
     );
 

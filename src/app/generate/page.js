@@ -69,7 +69,7 @@ export default function GeneratePage() {
   // Image State
   const [images, setImages] = useState(() => ({
     profile: initialDraft?.profileImage || null,
-    signature: initialDraft?.signatureImage || null
+    signature: initialDraft?.signatureImage || '/ceo-signature.png'
   }));
   const [layout, setLayout] = useState(() => initialDraft?.layout || {});
 

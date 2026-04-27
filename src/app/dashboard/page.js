@@ -37,6 +37,7 @@ export default function Dashboard() {
   const [requestSearch, setRequestSearch] = useState('');
   const [requestStatusFilter, setRequestStatusFilter] = useState('all');
   const [previewRequest, setPreviewRequest] = useState(null);
+  const [editRequestModal, setEditRequestModal] = useState({ open: false, data: null });
   const [branding, setBranding] = useState({
     logoUrl: '',
     brandName: 'LavishstarTechnologies',
@@ -229,8 +230,7 @@ export default function Dashboard() {
       mobile: requestItem.mobile,
       area: requestItem.area || requestItem.workLocation,
       bloodGroup: requestItem.bloodGroup,
-      profileImage: requestItem.profileImage,
-      signatureImage: requestItem.signatureImage
+      profileImage: requestItem.profileImage
     }));
     router.push('/generate');
   };
@@ -276,6 +276,33 @@ export default function Dashboard() {
       }
     } catch {
       alert('Failed to delete request');
+    }
+  };
+
+  const handleUpdateRequestParam = (e) => {
+    const { name, value } = e.target;
+    setEditRequestModal((prev) => ({
+      ...prev,
+      data: { ...prev.data, [name]: value }
+    }));
+  };
+
+  const saveRequestUpdate = async () => {
+    try {
+      const res = await fetch(`/api/id-card-requests/${editRequestModal.data._id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editRequestModal.data)
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        alert(error.error || 'Failed to update request');
+        return;
+      }
+      setEditRequestModal({ open: false, data: null });
+      fetchIdRequests();
+    } catch {
+      alert('Failed to update request');
     }
   };
 
@@ -465,6 +492,14 @@ export default function Dashboard() {
                             title="Create ID Card"
                           >
                             <UserPlus size={16} />
+                          </button>
+                          <button
+                            onClick={() => setEditRequestModal({ open: true, data: req })}
+                            className="action-icon edit"
+                            title="Edit Details"
+                            style={{ color: '#0284c7', backgroundColor: '#e0f2fe' }}
+                          >
+                            <Edit2 size={16} />
                           </button>
                           <button
                             onClick={() => updateRequestStatus(req._id, 'approved')}
@@ -691,6 +726,85 @@ export default function Dashboard() {
                 Create ID Card
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {editRequestModal.open && editRequestModal.data && (
+        <div className="secret-modal-overlay" onClick={() => setEditRequestModal({ open: false, data: null })}>
+          <div className="request-preview-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div className="request-preview-header">
+              <h3>Edit Employee Request</h3>
+              <button type="button" onClick={() => setEditRequestModal({ open: false, data: null })}>×</button>
+            </div>
+
+            <div className="request-preview-grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '16px', alignItems: 'start' }}>
+              <div className="edit-field">
+                 <label>Full Name</label>
+                 <input type="text" name="fullName" value={editRequestModal.data.fullName || ''} onChange={handleUpdateRequestParam} />
+              </div>
+              <div className="edit-field">
+                 <label>Mobile</label>
+                 <input type="text" name="mobile" value={editRequestModal.data.mobile || ''} onChange={handleUpdateRequestParam} />
+              </div>
+              <div className="edit-field">
+                 <label>Email</label>
+                 <input type="email" name="email" value={editRequestModal.data.email || ''} onChange={handleUpdateRequestParam} />
+              </div>
+              <div className="edit-field">
+                 <label>Father Name</label>
+                 <input type="text" name="fatherName" value={editRequestModal.data.fatherName || ''} onChange={handleUpdateRequestParam} />
+              </div>
+              <div className="edit-field">
+                 <label>Date of Birth</label>
+                 <input type="text" name="dateOfBirth" value={editRequestModal.data.dateOfBirth || ''} onChange={handleUpdateRequestParam} />
+              </div>
+              <div className="edit-field">
+                 <label>Gender</label>
+                 <select name="gender" value={editRequestModal.data.gender || ''} onChange={handleUpdateRequestParam}>
+                   <option value="">Select Gender</option>
+                   <option value="male">Male</option>
+                   <option value="female">Female</option>
+                   <option value="other">Other</option>
+                 </select>
+              </div>
+              <div className="edit-field">
+                 <label>Area</label>
+                 <input type="text" name="area" value={editRequestModal.data.area || ''} onChange={handleUpdateRequestParam} />
+              </div>
+              <div className="edit-field">
+                 <label>Work Location</label>
+                 <input type="text" name="workLocation" value={editRequestModal.data.workLocation || ''} onChange={handleUpdateRequestParam} />
+              </div>
+              <div className="edit-field">
+                 <label>Blood Group</label>
+                 <input type="text" name="bloodGroup" value={editRequestModal.data.bloodGroup || ''} onChange={handleUpdateRequestParam} />
+              </div>
+              <div className="edit-field">
+                 <label>Experience (Years)</label>
+                 <input type="text" name="experienceYears" value={editRequestModal.data.experienceYears || ''} onChange={handleUpdateRequestParam} />
+              </div>
+              <div className="edit-field">
+                 <label>Aadhaar Number</label>
+                 <input type="text" name="aadhaarNumber" value={editRequestModal.data.aadhaarNumber || ''} onChange={handleUpdateRequestParam} />
+              </div>
+              <div className="edit-field">
+                 <label>Address</label>
+                 <input type="text" name="address" value={editRequestModal.data.address || ''} onChange={handleUpdateRequestParam} />
+              </div>
+            </div>
+
+            <div className="request-preview-actions" style={{ marginTop: '20px' }}>
+              <button type="button" className="secret-cancel" onClick={() => setEditRequestModal({ open: false, data: null })}>Cancel</button>
+              <button type="button" className="secret-confirm" onClick={saveRequestUpdate}>Save Changes</button>
+            </div>
+            
+            <style jsx>{`
+              .edit-field { display: flex; flex-direction: column; gap: 4px; }
+              .edit-field label { font-size: 12px; font-weight: 600; color: #4b5563; }
+              .edit-field input, .edit-field select { padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; }
+              .edit-field input:focus, .edit-field select:focus { outline: none; border-color: #2563eb; }
+            `}</style>
           </div>
         </div>
       )}
