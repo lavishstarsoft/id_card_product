@@ -25,6 +25,8 @@ export default function EmployeeApplyPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+  const [showTermsPopup, setShowTermsPopup] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [highlightedField, setHighlightedField] = useState('');
   const [branding, setBranding] = useState({
     logoUrl: '',
@@ -52,6 +54,13 @@ export default function EmployeeApplyPage() {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
     if (highlightedField === name) {
+      setHighlightedField('');
+    }
+  };
+
+  const onTermsToggle = (e) => {
+    setTermsAccepted(e.target.checked);
+    if (highlightedField === 'termsAccepted') {
       setHighlightedField('');
     }
   };
@@ -99,6 +108,11 @@ export default function EmployeeApplyPage() {
         return false;
       }
     }
+    if (!termsAccepted) {
+      setSubmitError('Please accept the Terms and Conditions before submitting.');
+      focusAndHighlightField('termsAccepted');
+      return false;
+    }
     return true;
   };
 
@@ -139,6 +153,7 @@ export default function EmployeeApplyPage() {
 
       setFormData(initialForm);
       setImages({ profileImage: '', signatureImage: '' });
+      setTermsAccepted(false);
       setShowSuccessPopup(true);
     } catch {
       setSubmitError('Failed to submit form. Please try again.');
@@ -228,6 +243,21 @@ export default function EmployeeApplyPage() {
             </label>
           </div>
 
+          <div className={highlightedField === 'termsAccepted' ? 'terms-row field-highlight' : 'terms-row'}>
+            <label className="terms-checkbox">
+              <input
+                type="checkbox"
+                name="termsAccepted"
+                checked={termsAccepted}
+                onChange={onTermsToggle}
+              />
+              <span>I accept the Terms and Conditions</span>
+            </label>
+            <button type="button" className="terms-link" onClick={() => setShowTermsPopup(true)}>
+              View Terms
+            </button>
+          </div>
+
           <button type="submit" disabled={submitting}>
             {submitting ? 'Submitting...' : 'Submit Application'}
           </button>
@@ -241,6 +271,31 @@ export default function EmployeeApplyPage() {
             <h3>Application Submitted</h3>
             <p>Your request is sent to admin successfully.</p>
             <button type="button" onClick={() => setShowSuccessPopup(false)}>OK</button>
+          </div>
+        </div>
+      )}
+
+      {showTermsPopup && (
+        <div className="apply-terms-overlay" onClick={() => setShowTermsPopup(false)}>
+          <div className="apply-terms-popup" onClick={(e) => e.stopPropagation()}>
+            <div className="apply-terms-header">
+              <h3>Employee ID Card Terms and Conditions</h3>
+              <button type="button" className="terms-close" onClick={() => setShowTermsPopup(false)}>
+                Close
+              </button>
+            </div>
+            <ol>
+              <li>All details must match official records; false information will lead to rejection.</li>
+              <li>Photo and signature must be recent, clear, and unedited; blurry or filtered files are not accepted.</li>
+              <li>The ID card is company property and must be carried while on duty.</li>
+              <li>Sharing, lending, or duplicating the ID card is strictly prohibited.</li>
+              <li>Loss or damage must be reported within 24 hours for replacement.</li>
+              <li>Replacement fees may apply for repeated loss or negligence.</li>
+              <li>Unauthorized access areas using the card is a disciplinary offense.</li>
+              <li>The company can disable the card at any time for security reasons.</li>
+              <li>The card must be returned on resignation or termination without delay.</li>
+              <li>Violation of these terms may result in action as per company policy.</li>
+            </ol>
           </div>
         </div>
       )}
