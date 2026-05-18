@@ -287,6 +287,19 @@ export default function Dashboard() {
     }));
   };
 
+  const handleEditImageUpload = (e, fieldName) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setEditRequestModal((prev) => ({
+        ...prev,
+        data: { ...prev.data, [fieldName]: String(event.target?.result || '') }
+      }));
+    };
+    reader.readAsDataURL(file);
+  };
+
   const saveRequestUpdate = async () => {
     try {
       const res = await fetch(`/api/id-card-requests/${editRequestModal.data._id}`, {
@@ -713,6 +726,22 @@ export default function Dashboard() {
               <div><span>Purpose</span><strong>{previewRequest.purpose || '-'}</strong></div>
             </div>
 
+            <div className="accepted-terms-section" style={{ marginTop: '20px', borderTop: '1px solid #e2e8f0', paddingTop: '16px' }}>
+              <h4 style={{ fontSize: '14px', marginBottom: '8px', color: '#1f2937' }}>Accepted Terms & Conditions:</h4>
+              <ol style={{ fontSize: '12px', color: '#4b5563', paddingLeft: '20px', margin: 0, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <li>All details must match official records; false information will lead to rejection.</li>
+                <li>Photo and signature must be recent, clear, and unedited; blurry or filtered files are not accepted.</li>
+                <li>The ID card is company property and must be carried while on duty.</li>
+                <li>Sharing, lending, or duplicating the ID card is strictly prohibited.</li>
+                <li>Loss or damage must be reported within 24 hours for replacement.</li>
+                <li>Replacement fees may apply for repeated loss or negligence.</li>
+                <li>Unauthorized access areas using the card is a disciplinary offense.</li>
+                <li>The company can disable the card at any time for security reasons.</li>
+                <li>The card must be returned on resignation or termination without delay.</li>
+                <li>Violation of these terms may result in action as per company policy.</li>
+              </ol>
+            </div>
+
             <div className="request-preview-actions">
               <button type="button" className="secret-cancel" onClick={closeRequestPreview}>Close</button>
               <button
@@ -738,7 +767,7 @@ export default function Dashboard() {
               <button type="button" onClick={() => setEditRequestModal({ open: false, data: null })}>×</button>
             </div>
 
-            <div className="request-preview-grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '16px', alignItems: 'start' }}>
+            <div className="edit-request-grid">
               <div className="edit-field">
                  <label>Full Name</label>
                  <input type="text" name="fullName" value={editRequestModal.data.fullName || ''} onChange={handleUpdateRequestParam} />
@@ -792,6 +821,20 @@ export default function Dashboard() {
                  <label>Address</label>
                  <input type="text" name="address" value={editRequestModal.data.address || ''} onChange={handleUpdateRequestParam} />
               </div>
+              <div className="edit-field">
+                 <label>Profile Image</label>
+                 <input type="file" accept="image/*" onChange={(e) => handleEditImageUpload(e, 'profileImage')} />
+                 {editRequestModal.data.profileImage && (
+                   <img src={editRequestModal.data.profileImage} alt="Profile Preview" style={{ width: '60px', height: '60px', objectFit: 'cover', marginTop: '8px', borderRadius: '4px', border: '1px solid #e2e8f0' }} />
+                 )}
+              </div>
+              <div className="edit-field">
+                 <label>Signature Image</label>
+                 <input type="file" accept="image/*" onChange={(e) => handleEditImageUpload(e, 'signatureImage')} />
+                 {editRequestModal.data.signatureImage && (
+                   <img src={editRequestModal.data.signatureImage} alt="Signature Preview" style={{ width: '120px', height: '40px', objectFit: 'contain', marginTop: '8px', borderRadius: '4px', border: '1px solid #e2e8f0', background: '#f8fafc' }} />
+                 )}
+              </div>
             </div>
 
             <div className="request-preview-actions" style={{ marginTop: '20px' }}>
@@ -800,10 +843,21 @@ export default function Dashboard() {
             </div>
             
             <style jsx>{`
+              .edit-request-grid {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 16px;
+                align-items: start;
+              }
               .edit-field { display: flex; flex-direction: column; gap: 4px; }
               .edit-field label { font-size: 12px; font-weight: 600; color: #4b5563; }
-              .edit-field input, .edit-field select { padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; }
+              .edit-field input, .edit-field select { padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; width: 100%; box-sizing: border-box; }
               .edit-field input:focus, .edit-field select:focus { outline: none; border-color: #2563eb; }
+              @media (max-width: 640px) {
+                .edit-request-grid {
+                  grid-template-columns: 1fr;
+                }
+              }
             `}</style>
           </div>
         </div>

@@ -189,6 +189,70 @@ export default function GeneratePage() {
     });
   };
 
+  const [isSaving, setIsSaving] = useState(false);
+
+  const saveJournalistToDB = async () => {
+    if (!formData.name || !formData.mobile) {
+      alert('Please fill Name and Mobile Number');
+      return;
+    }
+    
+    try {
+      setIsSaving(true);
+      const response = await fetch('/api/journalists', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...formData,
+          adminPassword,
+          profileImage: images.profile,
+          signatureImage: images.signature,
+          layout
+        })
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        if (result?.data?._id || result?.data?.pressId) {
+          setFormData(prev => ({
+            ...prev,
+            _id: result.data._id || prev._id,
+            pressId: result.data.pressId || prev.pressId,
+            verifyUrl: result.data.verifyUrl || prev.verifyUrl
+          }));
+        }
+        if (result?.data?.layout) {
+          setLayout(result.data.layout);
+        }
+        if (formData._id) {
+          setAdminPassword('');
+          sessionStorage.removeItem('editJournalistAdminPassword');
+        }
+        if (requestId) {
+          await fetch(`/api/id-card-requests/${requestId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              status: 'approved',
+              approvedJournalistId: result?.data?._id || ''
+            })
+          });
+        }
+        console.log('Journalist details saved to DB successfully');
+        alert('Details Saved and QR Code Generated Successfully! You can now download the ID Card.');
+      } else {
+        const errorData = await response.json();
+        console.error('Failed to save to DB:', errorData.error, 'Details:', errorData.details);
+        alert('Failed to save to Database: ' + (errorData.details || 'Unknown Error'));
+      }
+    } catch (saveError) {
+      console.error('Failed to save:', saveError);
+      alert('Error saving details to database.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const exportAsImage = async () => {
     if (!idCardRef.current) return;
     
@@ -208,59 +272,8 @@ export default function GeneratePage() {
       link.href = dataUrl;
       link.click();
 
-      // Auto-save to Database
-      try {
-        const response = await fetch('/api/journalists', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            ...formData,
-            adminPassword,
-            profileImage: images.profile,
-            signatureImage: images.signature,
-            layout
-          })
-        });
-        
-        if (response.ok) {
-          const result = await response.json();
-          if (result?.data?._id || result?.data?.pressId) {
-            setFormData(prev => ({
-              ...prev,
-              _id: result.data._id || prev._id,
-              pressId: result.data.pressId || prev.pressId,
-              verifyUrl: result.data.verifyUrl || prev.verifyUrl
-            }));
-          }
-          if (result?.data?.layout) {
-            setLayout(result.data.layout);
-          }
-          if (formData._id) {
-            setAdminPassword('');
-            sessionStorage.removeItem('editJournalistAdminPassword');
-          }
-          if (requestId) {
-            await fetch(`/api/id-card-requests/${requestId}`, {
-              method: 'PATCH',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                status: 'approved',
-                approvedJournalistId: result?.data?._id || ''
-              })
-            });
-          }
-          console.log('Journalist details saved to DB successfully');
-          alert('ID Card Downloaded and Details Saved Successfully!');
-          router.push('/dashboard');
-        } else {
-          const errorData = await response.json();
-          console.error('Failed to save to DB:', errorData.error, 'Details:', errorData.details);
-          alert('Failed to save to Database: ' + (errorData.details || 'Unknown Error'));
-        }
-      } catch (saveError) {
-        console.error('Failed to auto-save:', saveError);
-      }
-
+      alert('ID Card Downloaded successfully!');
+      router.push('/dashboard');
     } catch (err) {
       console.error('Error exporting image:', err);
       alert('Failed to export ID Card. Please try again.');
@@ -473,18 +486,55 @@ export default function GeneratePage() {
             onLayoutChange={handleLayoutChange}
           />
 
-          <button 
-            className="btn btn-primary" 
-            onClick={exportAsImage}
-            disabled={isExporting}
-            style={{ 
-              opacity: isExporting ? 0.7 : 1, 
-              cursor: isExporting ? 'not-allowed' : 'pointer'
-            }}
-          >
-            <Download size={20} />
-            {isExporting ? 'Generating...' : 'Download ID Card'}
-          </button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', marginTop: '1rem' }}>
+            {!formData.verifyUrl ? (
+              <button 
+                className="btn btn-primary" 
+                onClick={saveJournalistToDB}
+                disabled={isSaving}
+                style={{ 
+                  opacity: isSaving ? 0.7 : 1, 
+                  cursor: isSaving ? 'not-allowed' : 'pointer',
+                  backgroundColor: '#10b981',
+                  marginTop: 0
+                }}
+              >
+                {isSaving ? 'Saving & Generating QR...' : 'Save Card & Generate QR'}
+              </button>
+            ) : (
+              <>
+                <button 
+                  className="btn btn-primary" 
+                  onClick={exportAsImage}
+                  disabled={isExporting}
+                  style={{ 
+                    opacity: isExporting ? 0.7 : 1, 
+                    cursor: isExporting ? 'not-allowed' : 'pointer',
+                    marginTop: 0
+                  }}
+                >
+                  <Download size={20} />
+                  {isExporting ? 'Downloading...' : 'Download ID Card'}
+                </button>
+                
+                <button 
+                  className="btn" 
+                  onClick={saveJournalistToDB}
+                  disabled={isSaving}
+                  style={{ 
+                    opacity: isSaving ? 0.7 : 1, 
+                    cursor: isSaving ? 'not-allowed' : 'pointer',
+                    backgroundColor: '#475569',
+                    color: 'white',
+                    fontSize: '0.9rem',
+                    padding: '0.5rem 1rem'
+                  }}
+                >
+                  {isSaving ? 'Updating...' : 'Update Details / Layout'}
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>
